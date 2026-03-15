@@ -1,0 +1,34 @@
+{
+    "py/object": "pros.conductor.project.Project",
+    "py/state": {
+        "project_name": "parrotplate",
+        "target": "v5",
+        "templates": {
+            "kernel": {
+                "location": "",
+                "metadata": {
+                    "origin": "pros-mainline",
+                    "output": "bin/output.bin"
+                },
+                "name": "kernel",
+                "py/object": "pros.conductor.templates.local_template.LocalTemplate",
+                "supported_kernels": null,
+                "system_files": [
+                    "include/api.h",
+                    "include/pros/.*\\.h",
+                    "include/pros/.*\\.hpp",
+                    "firmware/.*\\.a",
+                    "firmware/.*\\.ld"
+                ],
+                "target": "v5",
+                "user_files": [
+                    "include/main.h",
+                    "src/main.cpp",
+                    "Makefile"
+                ],
+                "version": "4.1.0"
+            }
+        },
+        "upload_options": {}
+    }
+}

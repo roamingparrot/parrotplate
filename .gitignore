@@ -1,0 +1,34 @@
+# PROS build artifacts
+bin/
+.d/
+
+# Compiled objects
+*.o
+*.d
+*.bin
+*.elf
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PROS upload cache
+upload_cache/
+
+# Firmware binaries (downloaded by PROS CLI)
+firmware/
+
+# Local dev tooling config
+CLAUDE.md
+.claude/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
