@@ -21,6 +21,7 @@
 
 #include "parrotlib/odom/odometry.hpp"
 #include "parrotlib/core/math_utils.hpp"
+#include "parrotlib/core/timer.hpp"
 #include <cmath>
 
 namespace parrot {
@@ -47,7 +48,7 @@ bool Odometry::calibrate() {
             calibrated_ = false;
             return false;
         }
-        pros::delay(10);
+        parrot::delay(10);
     }
 
     calibrated_ = true;
@@ -63,7 +64,7 @@ void Odometry::task_fn(void* param) {
     auto* self = static_cast<Odometry*>(param);
     while (self->running_) {
         self->update();
-        pros::delay(10);  // ~100Hz update rate
+        parrot::delay(10);  // ~100Hz update rate
     }
 }
 
@@ -88,7 +89,7 @@ void Odometry::stop() {
     if (!running_) return;
     running_ = false;
     // Give the task a cycle to exit cleanly
-    pros::delay(20);
+    parrot::delay(20);
     if (task_) {
         delete task_;
         task_ = nullptr;

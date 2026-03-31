@@ -20,7 +20,7 @@
  *       double error = target - current_position;
  *       double output = drive_pid.update(error);
  *       motors.move(output);
- *       pros::delay(10);
+ *       parrot::delay(10);
  *   }
  * @endcode
  *

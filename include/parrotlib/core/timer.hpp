@@ -28,6 +28,16 @@
 
 namespace parrot {
 
+/**
+ * Yield the current task for the given number of milliseconds.
+ * Drop-in replacement for pros::delay() under the parrot namespace
+ * so user code doesn't need to pull in the PROS API directly.
+ *
+ * @param ms  Milliseconds to sleep. The actual delay may be slightly
+ *            longer due to RTOS scheduling granularity (~1ms on V5).
+ */
+void delay(uint32_t ms);
+
 class Timer {
 public:
     Timer();

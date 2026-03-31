@@ -50,12 +50,12 @@ void example_auton() {
     // Drive forward 24 inches (one field tile) with a 2-second timeout
     robot::chassis.move_forward(24, 2000);
 
-    pros::delay(100);
+    parrot::delay(100);
 
     // Turn to face 90 degrees
     robot::chassis.turn_to(90, 1500);
 
-    pros::delay(100);
+    parrot::delay(100);
 
     // ── Per-motion overrides ─────────────────────────────────────────────
     // This short move needs tighter tolerance than the rest of the routine,

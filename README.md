@@ -185,7 +185,7 @@ parrot::PID pid({
 while (!pid.is_settled()) {
     double output = pid.update(target - current);
     motor.move(output);
-    pros::delay(10);
+    parrot::delay(10);
 }
 ```
 

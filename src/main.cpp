@@ -113,6 +113,6 @@ void opcontrol() {
         // ── Loop timing ──────────────────────────────────────────────────
         // 20ms = 50Hz control loop. The V5 motor controller updates at 50Hz
         // internally, so faster than this doesn't help and just wastes CPU.
-        pros::delay(20);
+        parrot::delay(20);
     }
 }

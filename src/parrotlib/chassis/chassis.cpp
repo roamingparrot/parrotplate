@@ -20,6 +20,7 @@
 
 #include "parrotlib/chassis/chassis.hpp"
 #include "parrotlib/core/math_utils.hpp"
+#include "parrotlib/core/timer.hpp"
 #include <cmath>
 
 namespace parrot {
@@ -89,7 +90,7 @@ Chassis::Chassis(ChassisConfig config)
 void Chassis::calibrate() {
     odom_.calibrate();
     odom_.start();
-    pros::delay(50);
+    parrot::delay(50);
 }
 
 // ─── Driver Control ──────────────────────────────────────────────────────────
@@ -119,7 +120,7 @@ void Chassis::run_motion(std::function<bool()> update_fn, int timeout) {
         if (update_fn()) {
             break;
         }
-        pros::delay(10);
+        parrot::delay(10);
     }
 
     end_motion();
@@ -136,13 +137,13 @@ bool Chassis::is_settled() const {
 
 void Chassis::wait_until_settled() {
     while (motion_running_) {
-        pros::delay(10);
+        parrot::delay(10);
     }
 }
 
 void Chassis::cancel_motion() {
     motion_running_ = false;
-    pros::delay(15);
+    parrot::delay(15);
     drivetrain_.stop();
     if (motion_task_) {
         motion_task_->remove();

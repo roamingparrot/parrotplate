@@ -4,6 +4,7 @@
  */
 
 #include "parrotlib/gui/screen.hpp"
+#include "parrotlib/core/timer.hpp"
 #include <algorithm>
 
 namespace parrot {
@@ -41,7 +42,7 @@ void Screen::start() {
 void Screen::stop() {
     if (!running_) return;
     running_ = false;
-    pros::delay(60);  // Let the task finish its current cycle
+    parrot::delay(60);  // Let the task finish its current cycle
     if (task_) {
         delete task_;
         task_ = nullptr;
@@ -70,7 +71,7 @@ void Screen::render_loop() {
         }
 
         draw_nav_bar();
-        pros::delay(50);  // ~20Hz refresh rate — fast enough for diagnostics
+        parrot::delay(50);  // ~20Hz refresh rate — fast enough for diagnostics
     }
 }
 

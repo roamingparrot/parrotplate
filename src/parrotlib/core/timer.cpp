@@ -8,6 +8,10 @@
 
 namespace parrot {
 
+void delay(uint32_t ms) {
+    pros::delay(ms);
+}
+
 Timer::Timer() {}
 
 void Timer::start() {
