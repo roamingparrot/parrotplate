@@ -30,10 +30,14 @@ namespace auton {
 void do_nothing();
 
 /**
- * Example autonomous — drives forward, turns, drives again.
- * Replace this with your actual competition routines.
+ * Comprehensive showcase routine that demonstrates every major motion
+ * function in the framework. Reads like a realistic skills-style run.
+ *
+ * Use this as a reference when building your own routines — every
+ * function call is annotated with what it does, why you'd use it,
+ * and what to watch out for.
  */
-void example_auton();
+void showcase();
 
 // ─── Add your autonomous routines below ──────────────────────────────────
 // void left_side_awp();

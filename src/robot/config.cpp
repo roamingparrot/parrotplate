@@ -114,7 +114,7 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // ─── Autonomous Selector ─────────────────────────────────────────────────────
 // These show up as buttons on the brain screen. Keep names short and clear.
 parrot::AutonSelector auton_selector({
-    {"Example",    auton::example_auton},
+    {"Showcase",   auton::showcase},
     {"Do Nothing", auton::do_nothing},
     // Add your routines here:
     // {"Left AWP",   auton::left_side_awp},
