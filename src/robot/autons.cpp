@@ -27,10 +27,11 @@
  *      doesn't go 24 inches accurately by itself, a 10-step routine
  *      won't magically fix that — the errors compound.
  *
- *   5. Small delays (50–100ms) between motions help consistency. They
- *      let the robot fully decelerate before the next PID loop starts
- *      reading a new target. Without them, momentum from the previous
- *      motion can throw off the initial error reading.
+ *   5. You do NOT need delays between motions. Each motion command blocks
+ *      until the robot's error has stayed within tolerance for the full
+ *      settle time. That IS the "the robot has stopped" guarantee.
+ *      If you're tempted to add a delay, your settle params are probably
+ *      too loose — tighten tolerance or increase settle time instead.
  */
 
 #include "robot/autons.hpp"
@@ -96,17 +97,29 @@ void showcase() {
     // Units: x = inches (+right), y = inches (+forward), heading = degrees
     robot::chassis.set_pose({-48, -60, 0});
 
-    // Per-auton settle tuning. These set the tolerance and settle time
-    // for the ENTIRE routine. Individual motions can still override these
-    // per-call (shown later), but these are the baseline.
+    // Per-auton settle tuning. These set the settle error (tolerance) and
+    // settle time for the ENTIRE routine. Individual motions can still
+    // override these per-call (shown later), but these are the baseline.
     //
     // For a skills run with 60 seconds, we can afford to be precise.
     // For a 15-second match auton, you'd use looser values (1.0in, 100ms).
     //
-    // tolerance = how close to the target counts as "arrived"
-    // settle_time = how long the robot must stay within tolerance before
-    //               the motion is considered complete (prevents exiting
-    //               on the peak of an oscillation)
+    // How settle works:
+    //   tolerance (settle error) = maximum acceptable error. The robot must
+    //     be within this range of the target for settle to begin counting.
+    //     For drives this is in inches, for turns in degrees.
+    //   settle_time = how many milliseconds the robot must CONTINUOUSLY
+    //     stay within tolerance before the motion is considered done.
+    //     This prevents exiting on the peak of an oscillation — the robot
+    //     might briefly pass through the tolerance zone while overshooting,
+    //     but settle_time forces it to actually be stable there.
+    //
+    // Example: tolerance = 0.5in, settle_time = 200ms
+    //   The robot hits 23.8in (within 0.5 of 24) → timer starts
+    //   Overshoots to 24.3in (still within 0.5) → timer keeps counting
+    //   Bounces to 24.6in (outside 0.5) → timer RESETS
+    //   Settles to 24.1in (within 0.5) → timer starts over
+    //   Stays within 0.5 for 200ms straight → motion complete
     robot::chassis.set_drive_settle(0.5, 200);   // 0.5 inches, 200ms
     robot::chassis.set_turn_settle(1.0, 150);    // 1.0 degrees, 150ms
     robot::chassis.set_swing_settle(1.5, 150);   // swings are less precise
@@ -120,6 +133,11 @@ void showcase() {
 //  correction PID runs in parallel to keep the robot from veering left
 //  or right — even small motor imbalances cause drift over 24+ inches.
 //
+//  The function blocks until BOTH conditions are met:
+//    - The error is within tolerance (settle error)
+//    - It has stayed there for settle_time ms
+//  OR the timeout expires, whichever comes first.
+//
 //  Parameters:
 //    distance — inches to travel (positive = forward)
 //    timeout  — maximum time in milliseconds. If the PID hasn't settled
@@ -130,15 +148,14 @@ void showcase() {
 //    - Forgetting the timeout. The robot stalls against a wall and the
 //      PID loop runs forever. 15 seconds wasted.
 //    - Setting tolerance too tight for the hardware. If your drivetrain
-//      can't reliably hit 0.1-inch accuracy, the PID will oscillate
+//      can't reliably hold 0.1-inch accuracy, the PID will oscillate
 //      forever trying. Start at 0.5in and tighten from there.
 
     robot::chassis.move_forward(24, 2000);
-    // The robot drove one tile forward. Odom now reads roughly (-48, -36, 0°).
-
-    // Brief pause between motions. Let the robot fully stop so the next
-    // PID loop doesn't start fighting residual momentum.
-    parrot::delay(100);
+    // The robot drove one tile forward. It didn't return from this call
+    // until it was within 0.5in of the target for 200ms straight (or
+    // until the 2000ms timeout expired). No delay needed — the robot
+    // is confirmed stable before we continue.
 
 // ─── PHASE 2: TURN TO FACE THE SCORING ZONE ─────────────────────────────────
 //
@@ -163,9 +180,7 @@ void showcase() {
 //      faster and smoother. Use when you have room and need speed.
 
     robot::chassis.turn_to(90, 1500);
-    // Now facing 90° (right). The robot didn't translate — it turned in place.
-
-    parrot::delay(100);
+    // Now facing 90° (right). Confirmed within 1.0° for 150ms before returning.
 
 // ─── PHASE 3: ODOM NAVIGATION — DRIVE TO A FIELD COORDINATE ─────────────────
 //
@@ -196,8 +211,6 @@ void showcase() {
     // The robot navigated from roughly (-48, -36) to (-24, -12).
     // It steered itself to face the target and drove there in one motion.
 
-    parrot::delay(100);
-
 // ─── PHASE 4: PRECISION ALIGNMENT ───────────────────────────────────────────
 //
 //  Per-motion overrides let you tweak behavior for a single call.
@@ -206,20 +219,20 @@ void showcase() {
 //  Any field set to -1 (or omitted) uses the auton-level default.
 //  Only specify what you want to change.
 
-    // Slow, precise forward nudge — tighter tolerance than the baseline.
+    // Slow, precise forward nudge — tighter settle than the baseline.
     robot::chassis.move_forward(6, 1500, {
         .max_speed   = 60,     // Half speed for control
-        .tolerance   = 0.25,   // Quarter-inch precision
-        .settle_time = 300,    // Hold position longer to confirm arrival
+        .tolerance   = 0.25,   // Quarter-inch settle error
+        .settle_time = 300,    // Must hold within 0.25in for 300ms
     });
     // After this call, the PID config reverts to the auton defaults (0.5in, 200ms).
     // The per-motion overrides are temporary — they don't leak into later calls.
 
-    parrot::delay(100);
-
     // (In a real routine you'd actuate a scoring mechanism here)
     // robot::intake::spin(127);
-    // parrot::delay(500);
+    // parrot::delay(500);   ← delay for mechanism actuation is fine — that's
+    //                          waiting for the MECHANISM, not waiting for the
+    //                          drivetrain to settle.
     // robot::intake::stop();
 
 // ─── PHASE 5: BACK AWAY FROM THE SCORING ZONE ───────────────────────────────
@@ -235,8 +248,6 @@ void showcase() {
 //  clearance for a point turn, more for a swing.
 
     robot::chassis.move_backward(12, 1500);
-
-    parrot::delay(100);
 
 // ─── PHASE 6: SWING TURN LEFT ───────────────────────────────────────────────
 //
@@ -272,8 +283,6 @@ void showcase() {
     // the robot to face 180° (backward from starting orientation).
     // The robot's position shifted slightly to the right during the arc.
 
-    parrot::delay(100);
-
 // ─── PHASE 7: CROSS THE FIELD — MULTI-POINT NAVIGATION ──────────────────────
 //
 //  Chaining multiple move_to() calls creates a multi-waypoint path.
@@ -281,17 +290,18 @@ void showcase() {
 //  its own steering — you don't need turn_to() between them unless
 //  you need a specific facing direction at the waypoint.
 //
+//  No delays between waypoints. Each move_to() settles before returning,
+//  so the robot is stationary when the next one starts.
+//
 //  Tip: for long traversals, add an intermediate waypoint to avoid
 //  obstacles. move_to() drives in a roughly straight line to the target.
 //  It won't path-plan around things.
 
     // Waypoint 1: cross toward center field
     robot::chassis.move_to(0, 0, 3000);
-    parrot::delay(50);
 
     // Waypoint 2: arrive at the far scoring zone
     robot::chassis.move_to(36, 24, 3000);
-    parrot::delay(100);
 
 // ─── PHASE 8: SWING TURN RIGHT ──────────────────────────────────────────────
 //
@@ -299,8 +309,6 @@ void showcase() {
 
     robot::chassis.swing_to(270, parrot::Side::RIGHT, 1500);
     // The left side drove while the right held, pivoting to face 270° (left).
-
-    parrot::delay(100);
 
 // ─── PHASE 9: READING THE ODOMETRY — RUNTIME POSE CHECKS ────────────────────
 //
@@ -351,8 +359,6 @@ void showcase() {
     double aim_heading = current.angle_to({48, 48});
     robot::chassis.turn_to(aim_heading, 1500);
 
-    parrot::delay(100);
-
 // ─── PHASE 11: FORWARD DRIVE WITH CUSTOM PID GAINS ──────────────────────────
 //
 //  Per-motion PID gain overrides. If one specific movement needs stiffer
@@ -366,8 +372,6 @@ void showcase() {
         .gains = {8.0, 0.0, 50.0},   // Stiffer P and D for pushing
         .max_speed = 100,             // Not full power — leave headroom for heading correction
     });
-
-    parrot::delay(100);
 
 // ─── PHASE 12: MOVE TO POINT DRIVING BACKWARD ───────────────────────────────
 //
@@ -386,8 +390,6 @@ void showcase() {
     });
     // The robot backed up to (24, 0), steering in reverse the whole way.
 
-    parrot::delay(100);
-
 // ─── PHASE 13: HEADING RESET — CORRECTING DRIFT ─────────────────────────────
 //
 //  reset_heading(heading) overwrites the odometry heading without touching
@@ -402,10 +404,11 @@ void showcase() {
 //  Example: the robot just backed into a flat wall that runs along the
 //  0° axis. You know the heading is 180° (facing the wall behind you).
 
-    // Simulating a wall-square. In reality you'd drive backward into the wall
-    // at low power for ~300ms, then reset heading to the known value.
+    // Wall-square: drive backward slowly until the timeout expires.
+    // The robot pushes against the wall for the full 800ms, squaring up.
+    // This intentionally times out — we don't care about settling, we
+    // want wall contact. The timeout IS the "wait" here.
     robot::chassis.move_backward(3, 800, {.max_speed = 40});
-    parrot::delay(50);
 
     // We know we're squared against a wall at heading 180°
     robot::chassis.reset_heading(180);
@@ -415,8 +418,6 @@ void showcase() {
     // XY position is unchanged — only the heading was corrected.
     // All subsequent turn_to() and move_to() calls now work from
     // this corrected heading.
-
-    parrot::delay(100);
 
 // ─── PHASE 14: SECOND MOVE_TO WITH PER-MOTION SETTLE OVERRIDE ───────────────
 //
@@ -429,21 +430,17 @@ void showcase() {
         .settle_time = 300,             // Hold for 300ms to confirm
     });
 
-    parrot::delay(100);
-
 // ─── PHASE 15: TURN WITH LOOSE TOLERANCE (FAST ALIGNMENT) ───────────────────
 //
 //  Not every turn needs to be precise. When you just need to roughly
 //  face a direction before a long drive (where move_to will correct
 //  the heading anyway), use a loose tolerance and short settle time
-//  to save time.
+//  to save autonomous seconds.
 
     robot::chassis.turn_to(0, 1000, {
-        .tolerance   = 3.0,   // 3 degrees is close enough
-        .settle_time = 50,    // Barely wait — we're in a hurry
+        .tolerance   = 3.0,   // 3 degrees settle error — close enough
+        .settle_time = 50,    // Only needs to hold for 50ms
     });
-
-    parrot::delay(50);
 
 // ─── PHASE 16: FULL POSE RESET ──────────────────────────────────────────────
 //
@@ -470,13 +467,11 @@ void showcase() {
 // ─── PHASE 17: NAVIGATION FROM THE NEW ORIGIN ──────────────────────────────
 //
 //  After the reset, coordinates are relative to the current position.
-//  (24, 0) means "24 inches to the right of where I am now."
+//  (24, 24) means "24 inches right and 24 inches forward from where I am now."
 
     robot::chassis.move_to(24, 24, 3000);
     // This drives to a point one tile right and one tile forward from the
     // reset position — NOT from the original starting position.
-
-    parrot::delay(100);
 
 // ─── PHASE 18: ASYNC MOTION — DO SOMETHING WHILE DRIVING ────────────────────
 //
@@ -498,9 +493,7 @@ void showcase() {
     // If you forget this and issue another motion command, cancel_motion()
     // is called automatically — the new motion takes over.
     robot::chassis.wait_until_settled();
-
     // robot::intake::stop();
-    parrot::delay(100);
 
 // ─── PHASE 19: CANCEL MOTION — EMERGENCY STOP ───────────────────────────────
 //
@@ -513,12 +506,10 @@ void showcase() {
 //  overrides any leftover autonomous movement.
 
     robot::chassis.move_forward(48, 3000, {.async = true});
-    parrot::delay(500);
+    parrot::delay(500);  // Let it drive for half a second...
     // We changed our mind — stop the motion early
     robot::chassis.cancel_motion();
     parrot::Logger::info("Auton", "Motion cancelled after 500ms");
-
-    parrot::delay(100);
 
 // ─── PHASE 20: FINAL PARKING — SWING + PRECISION DRIVE ──────────────────────
 //
@@ -529,8 +520,6 @@ void showcase() {
     robot::chassis.swing_to(90, parrot::Side::LEFT, 1500, {
         .tolerance = 2.0,    // Don't need exact heading for the approach
     });
-
-    parrot::delay(50);
 
     // Final precision drive into the parking zone
     robot::chassis.move_forward(18, 2000, {
@@ -558,6 +547,18 @@ void showcase() {
 //  swing_to(degrees, side, timeout, {params})  — arc turn, one side locked
 //  move_to(x, y, timeout, {params})            — drive to field coordinate
 //  move_to(Pose, timeout, {params})            — same, takes a Pose struct
+//
+//  Settle behavior (applies to all motion commands):
+//  ────────────────────────────────────────────────────────────────────
+//  Every motion blocks until BOTH conditions are met simultaneously:
+//    1. |error| < tolerance (settle error)     — robot is close enough
+//    2. Condition 1 has held for settle_time ms — robot is stable there
+//  OR the timeout expires, whichever comes first.
+//
+//  This means you NEVER need delays between motions. When the function
+//  returns, the robot has been confirmed stable for the settle duration.
+//  If it returns due to timeout, the robot may still be moving — that's
+//  the tradeoff of timeout protection.
 //
 //  Pose & Odometry:
 //  ────────────────────────────────────────────────────────────────────
@@ -621,6 +622,7 @@ void showcase() {
 //  If the robot oscillates around the target:
 //    → kD is too low (not enough damping) or kP is too high.
 //    → Try increasing kD by 50% or reducing kP by 20%.
+//    → Increase settle_time so it waits through the oscillation.
 //
 //  If the robot overshoots then slowly creeps back:
 //    → kI is too high or windup_range is too large.
@@ -640,6 +642,18 @@ void showcase() {
 //    → Battery voltage affects turn speed. Full battery turns faster.
 //    → Tile surface varies — practice tiles may differ from competition.
 //    → Try setting max_speed lower for consistency (80–100 instead of 127).
+//
+//  If the robot exits a motion too early (before fully stopped):
+//    → Tolerance is too loose. Tighten it.
+//    → Settle time is too short. The robot passes through the tolerance
+//      zone while oscillating and the timer expires on a peak.
+//      Increase settle_time to 200–400ms.
+//
+//  If the robot exits a motion too late (wastes time sitting still):
+//    → Settle time is too long. Reduce it.
+//    → Tolerance is too tight. Loosen it.
+//    → The robot is settled but the timer hasn't expired yet.
+//      For fast autons, 100–150ms settle time is usually enough.
 //
 //  Use `pros terminal` to watch Logger output in real time. Add logging
 //  at critical points in your routine so you can see where things go wrong
