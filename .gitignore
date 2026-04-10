@@ -23,10 +23,6 @@ upload_cache/
 # Firmware binaries (downloaded by PROS CLI)
 firmware/
 
-# Local dev tooling config
-CLAUDE.md
-.claude/
-
 # Temporary files
 *.tmp
 *.swp
