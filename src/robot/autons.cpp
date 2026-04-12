@@ -221,8 +221,8 @@ void showcase() {
 
     // Slow, precise forward nudge — tighter settle than the baseline.
     robot::chassis.move_forward(6, 1500, {
-        .max_speed   = 60,     // Half speed for control
-        .tolerance   = 0.25,   // Quarter-inch settle error
+        .max_speed   = 60,     // Half ish speed for control
+        .tolerance   = 1.0,   // One Inch settle error
         .settle_time = 300,    // Must hold within 0.25in for 300ms
     });
     // After this call, the PID config reverts to the auton defaults (0.5in, 200ms).
