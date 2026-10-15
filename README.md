@@ -1,6 +1,10 @@
-# ParrotPlate
+<p align="center">
+  <img src="assets/logo.svg" width="120" alt="ParrotPlate logo: a robot drivetrain seen from above, driving along a path">
+</p>
 
-A modular PROS-based robotics template framework for VEX V5 competitive robotics.
+<h1 align="center">ParrotPlate</h1>
+
+<p align="center">A modular PROS-based robotics template framework for VEX V5 competitive robotics.</p>
 
 ParrotPlate provides a clean, well-documented foundation for building high-performance VEX V5 robots. It handles the complex infrastructure — PID control, odometry, motion planning, and brain screen GUI — so your team can focus on strategy and mechanism design.
 
