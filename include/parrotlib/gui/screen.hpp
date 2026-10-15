@@ -57,10 +57,17 @@ public:
     /** Get number of registered pages. */
     int page_count() const;
 
+    /**
+     * How long the startup splash (the ParrotPlate logo) shows before the
+     * first page, in milliseconds. Set to 0 to skip it. Call before start().
+     */
+    void set_splash_time(int ms);
+
 private:
     std::vector<Page*> pages_;
     int current_page_ = 0;
     bool running_     = false;
+    int splash_ms_    = 1500;
     pros::Task* task_ = nullptr;
 
     /** Render loop — runs at ~20Hz in a background task. */

@@ -4,6 +4,7 @@
  */
 
 #include "parrotlib/gui/screen.hpp"
+#include "parrotlib/gui/logo.hpp"
 #include "parrotlib/core/timer.hpp"
 #include <algorithm>
 
@@ -61,7 +62,16 @@ void Screen::set_page(int index) {
 int Screen::get_current_page() const { return current_page_; }
 int Screen::page_count() const { return pages_.size(); }
 
+void Screen::set_splash_time(int ms) { splash_ms_ = ms > 0 ? ms : 0; }
+
 void Screen::render_loop() {
+    // Show the logo briefly while the robot finishes starting up. This runs
+    // in the screen's own task, so it never holds up initialize().
+    if (splash_ms_ > 0) {
+        draw_splash();
+        parrot::delay(splash_ms_);
+    }
+
     while (running_) {
         handle_touch();
 

@@ -97,7 +97,8 @@ parrotplate/
 │   │   │   ├── page.hpp               # Base page class
 │   │   │   ├── auton_selector.hpp     # Autonomous selector page
 │   │   │   ├── odom_page.hpp          # Odometry display page
-│   │   │   └── info_page.hpp          # Battery/motor/sensor page
+│   │   │   ├── info_page.hpp          # Battery/motor/sensor page
+│   │   │   └── logo.hpp               # Logo and startup splash
 │   │   └── utils/
 │   │       ├── logger.hpp             # Debug logger
 │   │       └── units.hpp              # Unit conversions
@@ -210,6 +211,10 @@ screen.add_page(new parrot::OdomPage(odometry));
 screen.add_page(new parrot::InfoPage(motors, imu_port));
 screen.start();
 ```
+
+When the screen starts, it shows the ParrotPlate logo for 1.5 seconds before
+the first page. Change or skip it with `screen.set_splash_time(ms)` before
+`start()`; `0` turns it off.
 
 ## PID Tuning Guide
 

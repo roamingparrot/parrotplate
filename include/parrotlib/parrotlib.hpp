@@ -28,6 +28,7 @@
 
 // ─── GUI ─────────────────────────────────────────────────────────────────────
 #include "parrotlib/gui/page.hpp"
+#include "parrotlib/gui/logo.hpp"
 #include "parrotlib/gui/screen.hpp"
 #include "parrotlib/gui/auton_selector.hpp"
 #include "parrotlib/gui/odom_page.hpp"
